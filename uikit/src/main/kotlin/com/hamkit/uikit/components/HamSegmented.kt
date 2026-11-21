@@ -1,12 +1,5 @@
 package com.hamkit.uikit.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
@@ -17,7 +10,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -30,15 +22,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.hamkit.uikit.effect.GlassSurface
-import com.hamkit.uikit.effect.LocalHamMotion
 import com.hamkit.uikit.effect.hamPressable
 import com.hamkit.uikit.theme.GlassSpec
 import com.hamkit.uikit.theme.LocalHamColors
+import com.hamkit.uikit.theme.LocalHamMotion
 import com.hamkit.uikit.theme.LocalHamTypography
 
 /**
@@ -92,7 +84,7 @@ fun HamSegmented(
                     ),
                     label = "HamSegmentedThumb",
                 )
-                val thumbOffsetPx = segmentWidth.toPx() * animatedIndex
+                val thumbOffsetPx = with(density) { segmentWidth.toPx() } * animatedIndex
                 Box(
                     Modifier
                         .offset(x = with(density) { thumbOffsetPx.toDp() })

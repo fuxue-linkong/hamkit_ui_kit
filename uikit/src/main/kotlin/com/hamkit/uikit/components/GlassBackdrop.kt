@@ -18,8 +18,12 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.GraphicsLayer
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.unit.IntSize
+import kotlin.math.roundToInt
 import com.hamkit.uikit.theme.LocalHamColors
 
 /**
@@ -69,7 +73,7 @@ fun GlassBackdrop(
     // 背景快照层：玻璃组件模糊的"背后画面"来源
     val backdropLayer = rememberGraphicsLayer()
     // 漂浮色斑：位置 / 半径 / 漂移方向固定，动效只改相位
-    val blobs = remember(decor) {
+    val blobs: List<BackdropBlob> = remember(decor) {
         if (decor) {
             listOf(
                 BackdropBlob(0.82f, 0.12f, 0.38f, 1f, 0.6f),
@@ -93,7 +97,7 @@ fun GlassBackdrop(
     )
 
     // 色斑颜色：从主题渐变色衍生的高饱和同族色，保证与底色和谐
-    val blobColors = remember(stops) {
+    val blobColors: List<Color> = remember(stops) {
         stops.take(3).mapIndexed { i, c ->
             when (i % 3) {
                 0 -> c.copy(alpha = 0.85f).copy(red = (c.red + 0.15f).coerceAtMost(1f))
@@ -108,7 +112,13 @@ fun GlassBackdrop(
             .fillMaxSize()
             // 录制本组件内容：玻璃层 drawLayer 时即可拿到"背后的画面"
             .drawWithContent {
-                backdropLayer.record(size) { this@drawWithContent.drawContent() }
+                // record(density, layoutDirection, size: IntSize) { 绘制内容 }：官方快照 API
+                // DrawScope 自身实现 Density 接口，直接作为 record 的 density 参数
+                backdropLayer.record(
+                    this,
+                    layoutDirection,
+                    IntSize(size.width.roundToInt(), size.height.roundToInt()),
+                ) { with(this@drawWithContent) { drawContent() } }
                 drawLayer(backdropLayer)
             },
     ) {

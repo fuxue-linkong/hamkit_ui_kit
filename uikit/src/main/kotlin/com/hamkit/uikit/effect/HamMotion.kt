@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import com.hamkit.uikit.theme.LocalHamMotion
 import androidx.compose.ui.graphics.graphicsLayer
 import kotlinx.coroutines.delay
 
@@ -33,7 +34,7 @@ data class HamMotion(
     /** 按压时透明度（1.0 = 不变淡） */
     val pressedAlpha: Float = 0.85f,
     /** 按压弹簧刚度（按下方向） */
-    val springStiffness: Float = Spring.StiffnessMediumHigh,
+    val springStiffness: Float = Spring.StiffnessMedium,
     /** 按压弹簧阻尼比（>1 无过冲） */
     val springDamping: Float = 1.1f,
     /** 入场淡入时长（ms），骨架屏等呼吸动效的基准节拍 */
@@ -73,19 +74,20 @@ data class HamMotion(
  */
 fun Modifier.hamPressable(
     interactionSource: MutableInteractionSource,
-    motion: HamMotion = LocalHamMotion.current,
+    motion: HamMotion? = null,
     overshoot: Boolean = true,
 ): Modifier = composed {
+    // 动效令牌：未显式指定时读取主题（CompositionLocal 在 composed 作用域内可访问）
+    val effectiveMotion = motion ?: LocalHamMotion.current
     // 收集按压态，驱动 scale/alpha 动画
     val pressed by interactionSource.collectIsPressedAsState()
-    val effectiveMotion = motion
     // 回弹弹簧：松手时启用微过冲（若开启），按下方向保持无过冲的干脆手感
     val releaseSpring = if (overshoot) {
-        spring(dampingRatio = effectiveMotion.overshootDamping, stiffness = effectiveMotion.overshootStiffness)
+        spring<Float>(dampingRatio = effectiveMotion.overshootDamping, stiffness = effectiveMotion.overshootStiffness)
     } else {
-        spring(dampingRatio = effectiveMotion.springDamping, stiffness = effectiveMotion.springStiffness)
+        spring<Float>(dampingRatio = effectiveMotion.springDamping, stiffness = effectiveMotion.springStiffness)
     }
-    val pressSpring = spring(dampingRatio = effectiveMotion.springDamping, stiffness = effectiveMotion.springStiffness)
+    val pressSpring = spring<Float>(dampingRatio = effectiveMotion.springDamping, stiffness = effectiveMotion.springStiffness)
     // 按下/松手切换动画规格：松手方向用回弹弹簧
     val scale by animateFloatAsState(
         targetValue = if (pressed) effectiveMotion.pressedScale else 1f,
@@ -122,18 +124,20 @@ fun Modifier.hamPressable(
 fun Modifier.hamEnter(
     index: Int = 0,
     fromOffsetY: Float = 24f,
-    motion: HamMotion = LocalHamMotion.current,
+    motion: HamMotion? = null,
 ): Modifier = composed {
+    // 动效令牌：未显式指定时读取主题
+    val effectiveMotion = motion ?: LocalHamMotion.current
     // 首帧置 false，经交错延迟后翻转为 true 触发动画
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        delay((index * motion.enterStaggerMillis).toLong())
+        delay((index * effectiveMotion.enterStaggerMillis).toLong())
         visible = true
     }
     // progress: 0（未入场）→ 1（完全入场）
     val progress by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
-        animationSpec = tween(durationMillis = motion.enterMillis, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = effectiveMotion.enterMillis, easing = androidx.compose.animation.core.FastOutSlowInEasing),
         label = "HamEnter",
     )
     graphicsLayer {

@@ -21,3 +21,8 @@ Thumbs.db
 .env.*
 *.pem
 *.key
+
+# Gradle 本地构建缓存
+.gradle/
+build/
+local.properties

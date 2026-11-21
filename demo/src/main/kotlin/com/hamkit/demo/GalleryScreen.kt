@@ -34,6 +34,8 @@ import com.hamkit.uikit.components.HamListItem
 import com.hamkit.uikit.components.HamRadioButton
 import com.hamkit.uikit.components.HamSearchBar
 import com.hamkit.uikit.components.HamSegmented
+import com.hamkit.uikit.components.HamSlider
+import com.hamkit.uikit.components.HamFab
 import com.hamkit.uikit.components.HamSkeleton
 import com.hamkit.uikit.components.HamSwitch
 import com.hamkit.uikit.components.HamTabRow

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
@@ -18,9 +19,13 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.drawscope.drawOutline
+import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.hamkit.uikit.components.LocalBackdropLayer
 import com.hamkit.uikit.theme.GlassSpec
@@ -115,47 +120,59 @@ fun GlassSurface(
     }
 
     val density = androidx.compose.ui.platform.LocalDensity.current
-    val blurModifier = if (blurOn) {
-        Modifier.graphicsLayer(
-            shape = effectiveShape,
-            clip = true,
-        ) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val radiusPx = effectiveSpec.blurRadius.blurRadiusPx(density)
-                val provider = LocalGlassBlurProvider.current
-                // 模糊链：blur → 亮度提升 → 饱和提升（iOS 玻璃"更亮更透"的关键）
-                val blur = provider?.create(radiusPx)?.let { it as? AndroidRenderEffect }
-                    ?: AndroidRenderEffect.createBlurEffect(radiusPx, radiusPx, Shader.TileMode.CLAMP)
-                var chain: AndroidRenderEffect = blur
-                if (effectiveSpec.refraction > 0f) {
-                    // 亮度矩阵：按 refraction 比例整体提亮（偏移量按 255 归一）
-                    val brightOffset = 30f * effectiveSpec.refraction
-                    val brightness = AndroidRenderEffect.createColorMatrixEffect(
-                        floatArrayOf(
-                            1f, 0f, 0f, 0f, brightOffset,
-                            0f, 1f, 0f, 0f, brightOffset,
-                            0f, 0f, 1f, 0f, brightOffset,
-                            0f, 0f, 0f, 1f, 0f,
+    // 模糊链构建放 Composable 作用域（provider.current 是 @Composable 调用），remember 缓存
+    val blurProvider = LocalGlassBlurProvider.current
+    val blurChain: AndroidRenderEffect? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        remember(effectiveSpec.blurRadius, effectiveSpec.refraction, blurProvider) {
+            val radiusPx = effectiveSpec.blurRadius.blurRadiusPx(density)
+            val blur = blurProvider?.create(radiusPx)?.let { it as? AndroidRenderEffect }
+                ?: AndroidRenderEffect.createBlurEffect(radiusPx, radiusPx, Shader.TileMode.CLAMP)
+            var chain: AndroidRenderEffect = blur
+            if (effectiveSpec.refraction > 0f) {
+                // 折射：亮度与饱和度按 refraction 比例提升（iOS 玻璃"更亮更透"）
+                val brightOffset = 30f * effectiveSpec.refraction
+                val brightness = AndroidRenderEffect.createColorFilterEffect(
+                    android.graphics.ColorMatrixColorFilter(
+                        android.graphics.ColorMatrix(
+                            floatArrayOf(
+                                1f, 0f, 0f, 0f, brightOffset,
+                                0f, 1f, 0f, 0f, brightOffset,
+                                0f, 0f, 1f, 0f, brightOffset,
+                                0f, 0f, 0f, 1f, 0f,
+                            ),
                         ),
-                    )
-                    chain = AndroidRenderEffect.createChainEffect(brightness, chain)
-                    // 饱和提升 1 + 0.35 × refraction
-                    val s = 1f + 0.35f * effectiveSpec.refraction
-                    val saturate = AndroidRenderEffect.createColorMatrixEffect(
-                        floatArrayOf(
-                            s, 0f, 0f, 0f, 0f,
-                            0f, s, 0f, 0f, 0f,
-                            0f, 0f, s, 0f, 0f,
-                            0f, 0f, 0f, 1f, 0f,
+                    ),
+                )
+                chain = AndroidRenderEffect.createChainEffect(brightness, chain)
+                val sat = 1f + 0.35f * effectiveSpec.refraction
+                val saturate = AndroidRenderEffect.createColorFilterEffect(
+                    android.graphics.ColorMatrixColorFilter(
+                        android.graphics.ColorMatrix(
+                            floatArrayOf(
+                                sat, 0f, 0f, 0f, 0f,
+                                0f, sat, 0f, 0f, 0f,
+                                0f, 0f, sat, 0f, 0f,
+                                0f, 0f, 0f, 1f, 0f,
+                            ),
                         ),
-                    )
-                    chain = AndroidRenderEffect.createChainEffect(saturate, chain)
-                }
-                renderEffect = chain.asComposeRenderEffect()
+                    ),
+                )
+                chain = AndroidRenderEffect.createChainEffect(saturate, chain)
             }
-            // 离屏层是 RenderEffect 生效前提
-            compositingStrategy = CompositingStrategy.Offscreen
+            chain
         }
+    } else {
+        null
+    }
+    val blurModifier = if (blurOn) {
+        // clip 裁剪形状 → graphicsLayer 离屏 + 模糊链（renderEffect 作用于整层内容）
+        Modifier
+            .clip(effectiveShape)
+            .graphicsLayer {
+                // 离屏层是 RenderEffect 生效前提
+                compositingStrategy = CompositingStrategy.Offscreen
+                blurChain?.let { renderEffect = it.asComposeRenderEffect() }
+            }
     } else {
         Modifier
     }
@@ -176,7 +193,7 @@ fun GlassSurface(
                 // 2) 噪点颗粒：低透明度平铺，打破塑料感
                 if (effectiveSpec.grain > 0f) {
                     drawIntoCanvas { canvas ->
-                        val frameworkPaint = Paint().asFrameworkPaint()
+                        val frameworkPaint = android.graphics.Paint()
                         frameworkPaint.shader = android.graphics.BitmapShader(
                             noiseBitmap,
                             Shader.TileMode.REPEAT,
@@ -217,20 +234,20 @@ fun GlassSurface(
                 val stroke = effectiveSpec.borderWidth.toPx()
                 if (effectiveSpec.edgeGlow > 0f) {
                     drawOutline(
-                        outline = effectiveShape.createOutline(size, layoutDirection, this),
+                        effectiveShape.createOutline(size, layoutDirection, this),
                         brush = Brush.verticalGradient(
                             colors = listOf(
                                 Color.White.copy(alpha = effectiveSpec.edgeGlow),
                                 borderColor.copy(alpha = effectiveSpec.borderAlpha * 0.4f),
                             ),
                         ),
-                        strokeWidth = stroke,
+                        style = Stroke(width = stroke),
                     )
                 } else {
                     drawOutline(
-                        outline = effectiveShape.createOutline(size, layoutDirection, this),
+                        effectiveShape.createOutline(size, layoutDirection, this),
                         color = borderColor.copy(alpha = effectiveSpec.borderAlpha),
-                        strokeWidth = stroke,
+                        style = Stroke(width = stroke),
                     )
                 }
             },

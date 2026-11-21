@@ -27,9 +27,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.hamkit.uikit.effect.LocalHamMotion
 import com.hamkit.uikit.effect.hamPressable
 import com.hamkit.uikit.theme.LocalHamColors
+import com.hamkit.uikit.theme.LocalHamMotion
 import com.hamkit.uikit.theme.LocalHamTypography
 
 /**
@@ -75,7 +75,7 @@ fun HamTabRow(
                 ),
                 label = "HamTabIndicator",
             )
-            val indicatorOffsetPx = tabWidth.toPx() * animatedIndex
+            val indicatorOffsetPx = with(density) { tabWidth.toPx() } * animatedIndex
             Box(
                 Modifier
                     .align(Alignment.BottomStart)

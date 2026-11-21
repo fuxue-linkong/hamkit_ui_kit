@@ -1,6 +1,5 @@
 package com.hamkit.uikit.components
 
-import android.app.Dialog
 import android.os.Build
 import android.view.Window
 import androidx.compose.foundation.clickable
@@ -11,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -62,17 +62,21 @@ fun HamAlertDialog(
 ) {
     val colors = LocalHamColors.current
     val typography = LocalHamTypography.current
+    // 对话框窗口的系统级背景模糊（Android 12+）：经当前 View 解析所属 Window
+    val view = LocalView.current
+    DisposableEffect(view) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            view.findWindow()?.let { GlassWindowBlur.applyTo(it, radius = 56) }
+        }
+        onDispose { }
+    }
     Dialog(
         onDismissRequest = onDismissRequest,
         properties = properties,
     ) {
-        // Android 12+ 为对话框窗口设置系统背景模糊
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            LocalView.current.context.findWindow()?.let { GlassWindowBlur.applyTo(it, radius = 56) }
-        }
-            // 低版本：加厚玻璃表面补偿不可模糊带来的层次缺失
-            val fallbackSpec = GlassSpec.Thick.copy(surfaceAlpha = 0.42f)
-            GlassSurface(
+        // 低版本：加厚玻璃表面补偿不可模糊带来的层次缺失
+        val fallbackSpec = GlassSpec.Thick.copy(surfaceAlpha = 0.42f)
+        GlassSurface(
                 modifier = modifier.fillMaxWidth(),
                 spec = glass ?: if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) GlassSpec.Thick else fallbackSpec,
             ) {
@@ -118,14 +122,13 @@ fun HamAlertDialog(
             }
         }
     }
-}
 
 /**
  * 从当前 View 上下文解析其所属 Window（对话框场景即 Dialog 窗口）。
  */
 private tailrec fun android.view.View.findWindow(): Window? =
     when (val parent = parent) {
-        is Dialog -> parent.window
+        is android.app.Dialog -> parent.window
         is android.view.ViewGroup -> parent.findWindow()
         else -> null
     }

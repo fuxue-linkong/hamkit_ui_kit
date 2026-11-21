@@ -23,10 +23,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.hamkit.uikit.effect.GlassSurface
-import com.hamkit.uikit.effect.LocalHamMotion
 import com.hamkit.uikit.effect.hamPressable
 import com.hamkit.uikit.theme.GlassSpec
 import com.hamkit.uikit.theme.LocalHamColors
+import com.hamkit.uikit.theme.LocalHamMotion
 import com.hamkit.uikit.theme.LocalHamTypography
 
 /**

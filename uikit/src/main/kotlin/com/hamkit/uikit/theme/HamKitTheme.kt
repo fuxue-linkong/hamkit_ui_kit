@@ -8,6 +8,15 @@ import com.hamkit.uikit.effect.GlassDefaults
 import com.hamkit.uikit.effect.GlassBlurProvider
 import com.hamkit.uikit.effect.HamMotion
 
+/** 当前颜色体系 */
+val LocalHamColors = staticCompositionLocalOf { HamColors.Light }
+
+/** 当前字体体系 */
+val LocalHamTypography = staticCompositionLocalOf { HamTypography.Default }
+
+/** 当前形状体系 */
+val LocalHamShapes = staticCompositionLocalOf { HamShapes.Default }
+
 /** 当前动效体系 */
 val LocalHamMotion = staticCompositionLocalOf { HamMotion.Default }
 

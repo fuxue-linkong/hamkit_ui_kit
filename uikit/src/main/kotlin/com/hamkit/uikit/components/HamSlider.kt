@@ -1,6 +1,7 @@
 package com.hamkit.uikit.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.progressSemantics
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,7 +22,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.semantics.sliderSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -104,7 +104,8 @@ fun HamSlider(
                         m
                     }
                 }
-                .sliderSemantics(value, valueRange) { newValue -> onValueChange(newValue); true },
+                // 语义：进度语义供无障碍服务读取（sliderSemantics 为 material3 内部 API，不可用）
+                .progressSemantics(value, valueRange, 0),
         ) {
             // 底层轨道：半透明
             Box(

@@ -67,13 +67,18 @@ fun GlassSpecOverride(
     blurProvider: GlassBlurProvider? = null,
     content: @Composable () -> Unit,
 ) {
+    // BlurPreference 本身可空（null = 自动策略），提供非空 provided 值即可
+    val provider: GlassBlurProvider = blurProvider ?: LocalGlassBlurProvider.current ?: DefaultGlassBlurProvider
     CompositionLocalProvider(
         GlassDefaults.glassSpec provides spec,
         GlassDefaults.blurEnabled provides blurEnabled,
-        GlassDefaults.blurProvider provides blurProvider ?: LocalGlassBlurProvider.current,
+        GlassDefaults.blurProvider provides provider,
         content = content,
     )
 }
+
+/** 默认模糊实现：交给框架内置 RenderEffect 策略（返回 null 即内置路径） */
+val DefaultGlassBlurProvider = GlassBlurProvider { null }
 
 /** 当前 Compose 树中的玻璃规范快捷读取 */
 val LocalGlassSpec: ProvidableCompositionLocal<GlassSpec> get() = GlassDefaults.glassSpec

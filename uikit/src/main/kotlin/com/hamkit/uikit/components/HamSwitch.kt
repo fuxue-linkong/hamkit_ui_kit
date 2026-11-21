@@ -23,10 +23,10 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.hamkit.uikit.effect.GlassSurface
-import com.hamkit.uikit.effect.LocalHamMotion
 import com.hamkit.uikit.effect.hamPressable
 import com.hamkit.uikit.theme.GlassSpec
 import com.hamkit.uikit.theme.LocalHamColors
+import com.hamkit.uikit.theme.LocalHamMotion
 import com.hamkit.uikit.theme.LocalHamShapes
 
 /**
@@ -68,6 +68,7 @@ fun HamSwitch(
         animationSpec = spring(dampingRatio = 0.75f, stiffness = 500f),
         label = "HamSwitchThumb",
     )
+    val motion = LocalHamMotion.current
     // 滑块颜色过渡：开=onAccent、关=textSecondary
     val thumbColorAnimated by animateColorAsState(
         targetValue = if (checked) colors.onAccent else colors.textSecondary,
@@ -75,7 +76,6 @@ fun HamSwitch(
         label = "HamSwitchThumbColor",
     )
     // 轨道颜色过渡：开/关切换时平滑变化（跟随主题动效令牌）
-    val motion = LocalHamMotion.current
     val targetTrackColor = if (checked) (style.checkedTrackColor ?: colors.accent) else Color.Transparent
     val trackColor by animateColorAsState(
         targetValue = targetTrackColor,

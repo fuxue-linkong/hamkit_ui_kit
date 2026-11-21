@@ -18,8 +18,8 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.hamkit.uikit.effect.GlassSurface
-import com.hamkit.uikit.effect.LocalHamMotion
 import com.hamkit.uikit.theme.GlassSpec
+import com.hamkit.uikit.theme.LocalHamMotion
 import com.hamkit.uikit.theme.LocalHamShapes
 
 /**
