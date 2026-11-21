@@ -8,7 +8,7 @@ android {
     // 本机/CI 复用已装 build-tools，避免 AGP 联网自动下载卡住
     buildToolsVersion = "37.0.0"
     namespace = "com.hamkit.demo"
-    compileSdk = 37
+    compileSdk = 37.1
 
     defaultConfig {
         applicationId = "com.hamkit.demo"
