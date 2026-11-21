@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.hamkit.uikit.effect.GlassSurface
+import com.hamkit.uikit.effect.hamPressable
 import com.hamkit.uikit.theme.GlassSpec
 import com.hamkit.uikit.theme.LocalHamColors
 import com.hamkit.uikit.theme.LocalHamTypography
@@ -55,6 +56,7 @@ fun HamChip(
             style = typography.label,
             color = style.selectedContentColor ?: colors.onAccent,
             modifier = modifier
+                .hamPressable(interactionSource)
                 .background(
                     color = colors.accent,
                     shape = RoundedCornerShape(50),
@@ -71,13 +73,15 @@ fun HamChip(
     } else {
         // 未选中：玻璃表面药丸
         GlassSurface(
-            modifier = modifier.clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                enabled = enabled,
-                role = Role.Button,
-                onClick = onClick,
-            ),
+            modifier = modifier
+                .hamPressable(interactionSource)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    enabled = enabled,
+                    role = Role.Button,
+                    onClick = onClick,
+                ),
             spec = glass ?: GlassSpec.Thin,
             shape = RoundedCornerShape(50),
         ) {

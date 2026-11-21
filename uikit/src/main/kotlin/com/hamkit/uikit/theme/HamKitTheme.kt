@@ -6,18 +6,13 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import com.hamkit.uikit.effect.GlassDefaults
 import com.hamkit.uikit.effect.GlassBlurProvider
+import com.hamkit.uikit.effect.HamMotion
 
-/** 当前颜色体系 */
-val LocalHamColors = staticCompositionLocalOf { HamColors.Light }
-
-/** 当前字体体系 */
-val LocalHamTypography = staticCompositionLocalOf { HamTypography.Default }
-
-/** 当前形状体系 */
-val LocalHamShapes = staticCompositionLocalOf { HamShapes.Default }
+/** 当前动效体系 */
+val LocalHamMotion = staticCompositionLocalOf { HamMotion.Default }
 
 /**
- * HamKit 主题入口：装配颜色 / 字体 / 形状 / 玻璃规范 四大底层体系。
+ * HamKit 主题入口：装配颜色 / 字体 / 形状 / 玻璃规范 / 动效 五大底层体系。
  *
  * 所有参数均可选 —— 只传需要改的部分，其余使用默认值；玻璃规范会同时
  * 写入 [GlassDefaults.glassSpec] 作为全局默认。
@@ -30,7 +25,7 @@ val LocalHamShapes = staticCompositionLocalOf { HamShapes.Default }
  * ) { ... }
  *
  * // 内置预设，开箱即用
- * HamKitTheme.presets(HamThemePreset.Ocean) { ... }
+ * HamKitThemePreset(HamThemePreset.Ocean) { ... }
  * ```
  */
 @Composable
@@ -39,19 +34,21 @@ fun HamKitTheme(
     typography: HamTypography = LocalHamTypography.current,
     shapes: HamShapes = LocalHamShapes.current,
     glass: GlassSpec = GlassSpec.Defaults,
+    motion: HamMotion = HamMotion.Default,
     content: @Composable () -> Unit,
 ) {
     CompositionLocalProvider(
         LocalHamColors provides colors,
         LocalHamTypography provides typography,
         LocalHamShapes provides shapes,
+        LocalHamMotion provides motion,
         GlassDefaults.glassSpec provides glass,
         content = content,
     )
 }
 
 /**
- * 内置风格预设：快速获得一套协调的玻璃观感。
+ * 内置风格预设。
  *
  * @property name 预设名
  * @property light 浅色配色
@@ -85,7 +82,7 @@ enum class HamThemePreset(
 }
 
 /**
- * 以预设启动主题，一行代码获得完整玻璃风格。
+ * 以预设启动主题，一行代码获得完整玻璃风格（含配套动效）。
  *
  * @param preset 风格预设
  * @param isDark 是否使用深色配色

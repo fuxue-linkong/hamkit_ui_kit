@@ -21,6 +21,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.hamkit.uikit.effect.GlassSurface
+import com.hamkit.uikit.effect.hamPressable
 import com.hamkit.uikit.theme.GlassSpec
 import com.hamkit.uikit.theme.LocalHamColors
 import com.hamkit.uikit.theme.LocalHamShapes
@@ -68,6 +69,7 @@ fun HamSwitch(
 
     GlassSurface(
         modifier = modifier
+            .hamPressable(interactionSource)
             .size(width = style.trackWidth, height = style.trackHeight)
             .clickable(
                 interactionSource = interactionSource,

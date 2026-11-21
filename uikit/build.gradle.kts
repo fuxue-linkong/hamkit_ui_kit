@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    // 发布 AAR 到 Maven 仓库（本地 / 远端）
+    `maven-publish`
 }
 
 android {
@@ -25,6 +27,20 @@ android {
     publishing {
         singleVariant("release") {
             withSourcesJar()
+        }
+    }
+}
+
+// maven 发布配置：publishToMavenLocal 即可本地验证接入
+publishing {
+    publications {
+        register<MavenPublication>("release") {
+            groupId = "com.hamkit"
+            artifactId = "uikit"
+            version = "0.2.0"
+            afterEvaluate {
+                from(components["release"])
+            }
         }
     }
 }

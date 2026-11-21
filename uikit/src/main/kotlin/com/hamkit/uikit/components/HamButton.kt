@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.hamkit.uikit.effect.GlassSurface
+import com.hamkit.uikit.effect.hamPressable
 import com.hamkit.uikit.theme.GlassSpec
 import com.hamkit.uikit.theme.LocalHamColors
 import com.hamkit.uikit.theme.LocalHamTypography
@@ -72,6 +73,7 @@ fun HamButton(
         // 强调按钮：强调色实底 + 药丸圆角，无玻璃层（扁平原则：色块分明）
         Box(
             modifier = baseModifier
+                .hamPressable(interactionSource)
                 .heightIn(min = style.minHeight.dp)
                 .background(
                     color = if (enabled) colors.accent else colors.accent.copy(alpha = 0.38f),
@@ -95,13 +97,15 @@ fun HamButton(
     } else {
         // 玻璃按钮：GlassSurface 承载玻璃质感
         GlassSurface(
-            modifier = baseModifier.clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                enabled = enabled,
-                role = Role.Button,
-                onClick = onClick,
-            ),
+            modifier = baseModifier
+                .hamPressable(interactionSource)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    enabled = enabled,
+                    role = Role.Button,
+                    onClick = onClick,
+                ),
             spec = glass ?: GlassSpec(),
             shape = RoundedCornerShape(50),
         ) {

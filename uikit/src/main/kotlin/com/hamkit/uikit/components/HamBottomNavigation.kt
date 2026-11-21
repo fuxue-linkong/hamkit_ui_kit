@@ -12,11 +12,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.hamkit.uikit.effect.GlassSurface
+import com.hamkit.uikit.effect.hamPressable
 import com.hamkit.uikit.theme.GlassSpec
 import com.hamkit.uikit.theme.LocalHamColors
 import com.hamkit.uikit.theme.LocalHamTypography
@@ -79,10 +81,15 @@ fun HamBottomNavigation(
     }
 }
 
-/** 无涟漪点击扩展（扁平风默认不带 Material 涟漪） */
-private fun Modifier.clickableNoRipple(onClick: () -> Unit): Modifier =
-    this.clickable(
-        interactionSource = MutableInteractionSource(),
-        indication = null,
-        onClick = onClick,
-    )
+/** 无涟漪点击 + 按压反馈（扁平风默认不带 Material 涟漪） */
+@Composable
+private fun Modifier.clickableNoRipple(onClick: () -> Unit): Modifier {
+    val interactionSource = remember { MutableInteractionSource() }
+    return this
+        .hamPressable(interactionSource)
+        .clickable(
+            interactionSource = interactionSource,
+            indication = null,
+            onClick = onClick,
+        )
+}

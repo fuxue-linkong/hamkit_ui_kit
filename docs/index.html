@@ -153,6 +153,66 @@
   /* 徽标行内布局 */
   .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .stack { display: flex; flex-direction: column; gap: 12px; }
+
+  /* ========== v0.2：交互动效（对应 HamMotion） ========== */
+  .btn, .chip, .switch, .nav-item, .seg-item, .list-item { transition: transform .16s cubic-bezier(.4,0,.6,1), opacity .16s, background .2s, color .2s; }
+  .btn:active, .chip:active, .switch:active, .seg-item:active, .list-item:active { transform: scale(.96); opacity: .85; }
+
+  /* ========== 复选框 / 单选（Canvas 绘制对应 HTML/SVG 实现） ========== */
+  .checkbox { width: 22px; height: 22px; border-radius: 6px; cursor: pointer; position: relative;
+    background: rgba(var(--glass-surface), .18); border: 1px solid rgba(var(--glass-border), .5); transition: background .2s, border-color .2s; }
+  .checkbox.on { background: var(--accent); border-color: var(--accent); }
+  .checkbox svg { position: absolute; inset: 3px; opacity: 0; transition: opacity .2s; }
+  .checkbox.on svg { opacity: 1; }
+  .radio { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; position: relative;
+    border: 1.8px solid rgba(var(--glass-border), .5); transition: border-color .2s; }
+  .radio.on { border-color: var(--accent); }
+  .radio .dot { position: absolute; inset: 4px; border-radius: 50%; background: var(--accent);
+    transform: scale(0); transition: transform .22s cubic-bezier(.5,1.4,.5,1); }
+  .radio.on .dot { transform: scale(1); }
+
+  /* ========== 分段控件 ========== */
+  .segmented { display: flex; position: relative; padding: 4px; border-radius: 14px; overflow: hidden; }
+  .segmented .seg-thumb { position: absolute; top: 4px; bottom: 4px; border-radius: 11px; background: var(--accent);
+    transition: left .22s cubic-bezier(.4,0,.2,1); }
+  .seg-item { position: relative; flex: 1; display: flex; align-items: center; justify-content: center;
+    height: 32px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text-secondary); z-index: 1; border-radius: 11px; }
+  .seg-item.active { color: var(--on-accent); }
+
+  /* ========== 页签 ========== */
+  .tabrow { display: flex; position: relative; border-radius: var(--radius); padding: 0 6px; }
+  .tab { flex: 1; display: flex; align-items: center; justify-content: center; height: 44px;
+    font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-secondary); }
+  .tab.active { color: var(--accent); }
+  .tab-indicator { position: absolute; bottom: 4px; height: 3px; border-radius: 999px; background: var(--accent);
+    transition: left .22s cubic-bezier(.4,0,.2,1); }
+
+  /* ========== 头像 / 列表行 ========== */
+  .avatar { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    background: var(--accent); color: var(--on-accent); font-size: 16px; font-weight: 700;
+    border: 1px solid rgba(var(--glass-border), .4); }
+  .list-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; cursor: pointer; }
+  .list-item .lt { font-size: 15px; font-weight: 600; }
+  .list-item .ls { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+  /* ========== 骨架屏（呼吸闪烁） ========== */
+  .skeleton { height: 16px; border-radius: 8px;
+    background: rgba(var(--glass-surface), .18); border: 1px solid rgba(var(--glass-border), .12);
+    animation: breath 1.2s ease-in-out infinite alternate; }
+  @keyframes breath { from { opacity: .45; } to { opacity: 1; } }
+
+  /* ========== Toast ========== */
+  .toast { position: fixed; top: 76px; left: 50%; transform: translateX(-50%); z-index: 20;
+    padding: 12px 18px; border-radius: 16px; font-size: 14px; font-weight: 500;
+    opacity: 0; pointer-events: none; transition: opacity .22s, transform .22s; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ========== FAB ========== */
+  .fab { position: fixed; right: 22px; bottom: 92px; width: 56px; height: 56px; border-radius: 50%; z-index: 10;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    background: var(--accent); color: var(--on-accent); font-size: 26px; font-weight: 700;
+    box-shadow: 0 4px 14px rgba(0,0,0,.18); transition: transform .16s; }
+  .fab:active { transform: scale(.94); }
 </style>
 </head>
 <body>
@@ -206,8 +266,53 @@
     <span class="badge">NEW</span>
   </div>
 
+  <h2 class="section">Checkbox / Radio 复选与单选（v0.2）</h2>
+  <div class="row">
+    <div class="checkbox on" id="cbDemo"><svg viewBox="0 0 16 16"><path d="M3 8.5 L6.5 12 L13 4.5" fill="none" stroke="var(--on-accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <span style="font-size:13px;color:var(--text-secondary)">复选框</span>
+    <div class="radio on" id="rdDemo1"><span class="dot"></span></div>
+    <div class="radio" id="rdDemo2"><span class="dot"></span></div>
+    <span style="font-size:13px;color:var(--text-secondary)">单选组</span>
+  </div>
+
+  <h2 class="section">Segmented 分段控件（v0.2）</h2>
+  <div class="segmented glass" id="segDemo">
+    <div class="seg-thumb" style="left:4px; width:calc((100% - 8px) / 3);"></div>
+    <div class="seg-item active">日</div>
+    <div class="seg-item">周</div>
+    <div class="seg-item">月</div>
+  </div>
+
+  <h2 class="section">TabRow 页签（v0.2）</h2>
+  <div class="tabrow glass" id="tabDemo" style="background:transparent;">
+    <div class="tab active">推荐</div>
+    <div class="tab">关注</div>
+    <div class="tab">热榜</div>
+    <div class="tab-indicator" style="left:6px; width:calc((100% - 12px) / 3);"></div>
+  </div>
+
+  <h2 class="section">Avatar 与 ListItem（v0.2）</h2>
+  <div class="list-item glass">
+    <div class="avatar">H</div>
+    <div style="flex:1">
+      <div class="lt">玻璃列表行</div>
+      <div class="ls">leading / content / trailing 三槽位</div>
+    </div>
+    <span class="badge">9</span>
+  </div>
+
+  <h2 class="section">Skeleton 骨架屏（v0.2）</h2>
+  <div class="stack">
+    <div class="skeleton" style="width:92%"></div>
+    <div class="skeleton" style="width:68%"></div>
+  </div>
+
   <div style="height:90px"></div>
 </main>
+
+<!-- Toast（v0.2）与 FAB -->
+<div class="toast glass" id="toastDemo">HamKit v0.2：交互与动效已就绪 🐹</div>
+<div class="fab" id="fabDemo">+</div>
 
 <!-- 底部导航：悬浮玻璃条 -->
 <nav class="bottom-nav glass">
@@ -245,6 +350,38 @@
   slider.addEventListener('pointerdown', e => { dragging = true; updateSlider(e.clientX); });
   window.addEventListener('pointermove', e => { if (dragging) updateSlider(e.clientX); });
   window.addEventListener('pointerup', () => dragging = false);
+
+  // v0.2：复选框 / 单选组演示
+  document.getElementById('cbDemo').addEventListener('click', function () { this.classList.toggle('on'); });
+  const radios = [document.getElementById('rdDemo1'), document.getElementById('rdDemo2')];
+  radios.forEach(r => r.addEventListener('click', () => radios.forEach(x => x.classList.remove('on')) || r.classList.add('on')));
+
+  // v0.2：分段控件滑动（对应 HamSegmented 指示块动画）
+  const segItems = document.querySelectorAll('#segDemo .seg-item');
+  const segThumb = document.querySelector('#segDemo .seg-thumb');
+  segItems.forEach((item, i) => item.addEventListener('click', () => {
+    segItems.forEach(x => x.classList.remove('active'));
+    item.classList.add('active');
+    segThumb.style.left = 'calc(4px + (100% - 8px) / 3 * ' + i + ')';
+  }));
+
+  // v0.2：页签指示条滑动
+  const tabs = document.querySelectorAll('#tabDemo .tab');
+  const indicator = document.querySelector('#tabDemo .tab-indicator');
+  tabs.forEach((tab, i) => tab.addEventListener('click', () => {
+    tabs.forEach(x => x.classList.remove('active'));
+    tab.classList.add('active');
+    indicator.style.left = 'calc(6px + (100% - 12px) / 3 * ' + i + ')';
+  }));
+
+  // v0.2：Toast 显示（FAB 与列表行均可触发）
+  const toast = document.getElementById('toastDemo');
+  function showToast() {
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2400);  // 对应 HamToastStyle.autoDismissMillis
+  }
+  document.getElementById('fabDemo').addEventListener('click', showToast);
+  document.querySelector('.list-item').addEventListener('click', showToast);
 </script>
 </body>
 </html>
