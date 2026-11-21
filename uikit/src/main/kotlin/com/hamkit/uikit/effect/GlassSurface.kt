@@ -21,15 +21,18 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.hamkit.uikit.components.LocalBackdropLayer
 import com.hamkit.uikit.theme.GlassSpec
 import com.hamkit.uikit.theme.LocalHamColors
+import kotlin.math.roundToInt
 import kotlin.random.Random
 
 /**
@@ -164,28 +167,33 @@ fun GlassSurface(
     } else {
         null
     }
+    // 玻璃自己的临时层：模糊只作用于"背景快照"，绝不波及子内容（文字）
+    val scratchLayer = rememberGraphicsLayer()
     val blurModifier = if (blurOn) {
-        // clip 裁剪形状 → graphicsLayer 离屏 + 模糊链（renderEffect 作用于整层内容）
         Modifier
-            .clip(effectiveShape)
-            .graphicsLayer {
-                // 离屏层是 RenderEffect 生效前提
-                compositingStrategy = CompositingStrategy.Offscreen
-                blurChain?.let { renderEffect = it.asComposeRenderEffect() }
-            }
     } else {
         Modifier
     }
 
     Box(
         modifier
+            .clip(effectiveShape)
             .then(blurModifier)
-            // 玻璃主体绘制：表面色 + （透视时）背景快照 + 噪点 + 高光 + 边缘光
-            // 注意：blurModifier 已含 shape 裁剪，这里无需再 clip（避免双重裁剪浪费）
+            // 玻璃主体绘制：背景快照（模糊）+ 表面色 + 噪点 + 高光 + 边缘光
+            // 关键：模糊在 drawBehind 内部经 scratchLayer 应用，Box 的子内容（文字）
+            // 不经过任何带 RenderEffect 的层，保持清晰
             .drawBehind {
-                // 1) 透视模糊层：把"背后的画面"画进自身（graphicsLayer 已加模糊链）
                 if (canRefract) {
-                    drawLayer(backdropLayer!!)
+                    // 1) 把"背后的画面"录进临时层并施加模糊链，再绘制
+                    scratchLayer.record(
+                        this,
+                        layoutDirection,
+                        IntSize(size.width.roundToInt(), size.height.roundToInt()),
+                    ) { drawLayer(backdropLayer!!) }
+                    scratchLayer.renderEffect = blurChain?.asComposeRenderEffect()
+                    drawLayer(scratchLayer)
+                    // 2) 表面色叠加在模糊背景上（玻璃白蒙层）
+                    drawRect(surfaceColor.copy(alpha = surfaceAlpha))
                 } else {
                     // 无透视时铺底色（表面层），保持原有观感
                     drawRect(surfaceColor.copy(alpha = surfaceAlpha))
