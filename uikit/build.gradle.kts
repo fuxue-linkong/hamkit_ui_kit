@@ -37,7 +37,7 @@ publishing {
         register<MavenPublication>("release") {
             groupId = "com.hamkit"
             artifactId = "uikit"
-            version = "0.3.0"
+            version = "0.4.0"
             afterEvaluate {
                 from(components["release"])
             }

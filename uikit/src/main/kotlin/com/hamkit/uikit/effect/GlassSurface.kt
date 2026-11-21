@@ -1,30 +1,31 @@
 package com.hamkit.uikit.effect
 
+import android.graphics.Bitmap
 import android.graphics.RenderEffect as AndroidRenderEffect
 import android.graphics.Shader
 import android.os.Build
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.drawscope.drawOutline
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.hamkit.uikit.components.LocalBackdropLayer
 import com.hamkit.uikit.theme.GlassSpec
 import com.hamkit.uikit.theme.LocalHamColors
-import com.hamkit.uikit.theme.LocalHamShapes
+import kotlin.random.Random
 
 /**
  * 判断当前设备是否具备系统级实时模糊能力（API 31 引入 RenderEffect）。
@@ -43,18 +44,36 @@ fun resolveBlurEnabled(explicit: BlurPreference? = null): Boolean {
 }
 
 /**
- * HamKit 玻璃核心容器：所有玻璃组件的视觉基础。
+ * 生成 64×64 单通道噪点位图（remember 缓存，每主题只生成一次）。
  *
- * 绘制三层结构（扁平玻璃拟态配方）：
- * 1. 半透明表面层 —— 玻璃质感主体；
- * 2. 实时模糊层 —— 仅 API 31+ 或注入了自定义 [GlassBlurProvider] 时生效；
- * 3. 半透明细描边 —— 勾勒玻璃边缘，扁平风格的关键细节。
+ * 玻璃噪点用于打破大面积半透明的"塑料感"，属静态纹理，生成成本一次性。
+ */
+private fun createNoiseBitmap(): Bitmap {
+    val size = 64
+    val pixels = IntArray(size * size)
+    val random = Random(2026)
+    for (i in pixels.indices) {
+        // 灰度随机噪点：亮度抖动 ±36
+        val v = 128 + random.nextInt(-36, 36)
+        pixels[i] = 0xFF shl 24 or (v shl 16) or (v shl 8) or v
+    }
+    return Bitmap.createBitmap(pixels, size, size, Bitmap.Config.ARGB_8888)
+}
+
+/**
+ * HamKit 玻璃核心容器：所有玻璃组件的视觉基础（v0.4 重构）。
  *
- * 性能设计：
- * - 模糊经 graphicsLayer 的 RenderEffect 作用于**自身 bounds** 的离屏层，
- *   不触发父级整屏重绘；
- * - 模糊半径与 alpha 参数以 remember 记忆，重组不重建 layer；
- * - 不支持模糊的设备自动降级为"更实的半透明 + 微渐变叠层"，绘制成本几乎为零。
+ * 绘制层次（自底向上）：
+ * 1. **透视模糊层**（API 31+）：绘制"玻璃背后"的背景快照（来自 GlassBackdrop 录制），
+ *    经 `blur → brightness → saturation` 链式 RenderEffect 产生真实玻璃透视；
+ * 2. **半透明表面**：玻璃质感主体；
+ * 3. **噪点颗粒**：低透明度噪点平铺，打破塑料感；
+ * 4. **内顶高光**：顶缘白色渐变光带，模拟玻璃顶缘反光；
+ * 5. **边缘光描边**：上亮下暗渐变描边，勾勒玻璃体积。
+ *
+ * 降级规则（互斥）：
+ * - 无背景快照可读 / blur 关闭 / API 26–30 → 不做透视模糊，
+ *   表面加厚（alpha × 2.4）保证可读性，其余质感层照常绘制。
  *
  * @param spec 玻璃规范；不传则读取 [LocalGlassSpec]（主题 / 作用域默认值）
  * @param shape 裁剪形状；不传则按 spec.cornerRadius 生成圆角
@@ -77,24 +96,65 @@ fun GlassSurface(
     val effectiveShape = shape ?: remember(effectiveSpec.cornerRadius) {
         androidx.compose.foundation.shape.RoundedCornerShape(effectiveSpec.cornerRadius)
     }
+    // 噪点纹理：进程级缓存一次生成（android 位图直接用于 BitmapShader）
+    val noiseBitmap = remember { createNoiseBitmap() }
 
     // 降级判定：不支持实时模糊时提高表面不透明度保证可读性
     val blurOn = resolveBlurEnabled(forceBlur)
+    val backdropLayer = LocalBackdropLayer.current
+    // 透视模糊成立条件：设备支持 + 模糊开启 + 有背景快照可读
+    val canRefract = blurOn && backdropLayer != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val fallback = !blurOn
-    val surfaceAlpha = if (fallback) (effectiveSpec.surfaceAlpha * 2.4f).coerceAtMost(0.75f) else effectiveSpec.surfaceAlpha
+    val surfaceAlpha = when {
+        // 完全降级（无模糊）：加厚表面保证可读性
+        fallback -> (effectiveSpec.surfaceAlpha * 2.4f).coerceAtMost(0.75f)
+        // 有透视模糊：表面可以更透，靠模糊层提供质感
+        canRefract -> effectiveSpec.surfaceAlpha
+        // 有模糊能力但无背景快照：维持原透明度
+        else -> effectiveSpec.surfaceAlpha
+    }
 
+    val density = androidx.compose.ui.platform.LocalDensity.current
     val blurModifier = if (blurOn) {
-        Modifier.graphicsLayer {
-            // 仅在设备支持且未提供自定义 provider 时走内置 RenderEffect 路径
-            val provider = LocalGlassBlurProvider.current
+        Modifier.graphicsLayer(
+            shape = effectiveShape,
+            clip = true,
+        ) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val radiusPx = effectiveSpec.blurRadius.blurRadiusPx(density)
-                val effect = provider?.create(radiusPx)?.let { it as? AndroidRenderEffect }
+                val provider = LocalGlassBlurProvider.current
+                // 模糊链：blur → 亮度提升 → 饱和提升（iOS 玻璃"更亮更透"的关键）
+                val blur = provider?.create(radiusPx)?.let { it as? AndroidRenderEffect }
                     ?: AndroidRenderEffect.createBlurEffect(radiusPx, radiusPx, Shader.TileMode.CLAMP)
-                renderEffect = effect.asComposeRenderEffect()
+                var chain: AndroidRenderEffect = blur
+                if (effectiveSpec.refraction > 0f) {
+                    // 亮度矩阵：按 refraction 比例整体提亮（偏移量按 255 归一）
+                    val brightOffset = 30f * effectiveSpec.refraction
+                    val brightness = AndroidRenderEffect.createColorMatrixEffect(
+                        floatArrayOf(
+                            1f, 0f, 0f, 0f, brightOffset,
+                            0f, 1f, 0f, 0f, brightOffset,
+                            0f, 0f, 1f, 0f, brightOffset,
+                            0f, 0f, 0f, 1f, 0f,
+                        ),
+                    )
+                    chain = AndroidRenderEffect.createChainEffect(brightness, chain)
+                    // 饱和提升 1 + 0.35 × refraction
+                    val s = 1f + 0.35f * effectiveSpec.refraction
+                    val saturate = AndroidRenderEffect.createColorMatrixEffect(
+                        floatArrayOf(
+                            s, 0f, 0f, 0f, 0f,
+                            0f, s, 0f, 0f, 0f,
+                            0f, 0f, s, 0f, 0f,
+                            0f, 0f, 0f, 1f, 0f,
+                        ),
+                    )
+                    chain = AndroidRenderEffect.createChainEffect(saturate, chain)
+                }
+                renderEffect = chain.asComposeRenderEffect()
             }
             // 离屏层是 RenderEffect 生效前提
-            compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen
+            compositingStrategy = CompositingStrategy.Offscreen
         }
     } else {
         Modifier
@@ -102,30 +162,78 @@ fun GlassSurface(
 
     Box(
         modifier
-            .clip(effectiveShape)
             .then(blurModifier)
-            .background(surfaceColor.copy(alpha = surfaceAlpha), effectiveShape)
-            .then(
-                if (fallback) {
-                    // 降级叠层：极淡的斜向渐变模拟玻璃反光，成本几乎为零
-                    Modifier.drawWithContent {
-                        drawContent()
-                        drawRect(
-                            brush = Brush.linearGradient(
-                                colors = listOf(
-                                    Color.White.copy(alpha = 0.10f),
-                                    Color.Transparent,
-                                ),
-                                start = Offset(size.width * 0.2f, 0f),
-                                end = Offset(size.width, size.height),
-                            ),
-                        )
-                    }
+            // 玻璃主体绘制：表面色 + （透视时）背景快照 + 噪点 + 高光 + 边缘光
+            // 注意：blurModifier 已含 shape 裁剪，这里无需再 clip（避免双重裁剪浪费）
+            .drawBehind {
+                // 1) 透视模糊层：把"背后的画面"画进自身（graphicsLayer 已加模糊链）
+                if (canRefract) {
+                    drawLayer(backdropLayer!!)
                 } else {
-                    Modifier
-                },
-            )
-            .border(effectiveSpec.borderWidth, borderColor.copy(alpha = effectiveSpec.borderAlpha), effectiveShape),
+                    // 无透视时铺底色（表面层），保持原有观感
+                    drawRect(surfaceColor.copy(alpha = surfaceAlpha))
+                }
+                // 2) 噪点颗粒：低透明度平铺，打破塑料感
+                if (effectiveSpec.grain > 0f) {
+                    drawIntoCanvas { canvas ->
+                        val frameworkPaint = Paint().asFrameworkPaint()
+                        frameworkPaint.shader = android.graphics.BitmapShader(
+                            noiseBitmap,
+                            Shader.TileMode.REPEAT,
+                            Shader.TileMode.REPEAT,
+                        )
+                        frameworkPaint.alpha = (effectiveSpec.grain * 255).toInt()
+                        canvas.nativeCanvas.drawRect(0f, 0f, size.width, size.height, frameworkPaint)
+                    }
+                }
+                // 3) 内顶高光：顶缘白色渐变光带（真实玻璃顶缘反光）
+                if (effectiveSpec.highlight > 0f) {
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = effectiveSpec.highlight),
+                                Color.Transparent,
+                            ),
+                            endY = size.height * 0.35f,
+                        ),
+                    )
+                }
+                // 4) 斜向微反光：玻璃面随角度的亮度差（扁平克制的 6% 强度）
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.06f),
+                            Color.Transparent,
+                        ),
+                        start = Offset(size.width * 0.15f, 0f),
+                        end = Offset(size.width, size.height),
+                    ),
+                )
+            }
+            // 5) 边缘光：上亮下暗渐变描边（edgeGlow=0 回落纯色描边）
+            .drawWithContent {
+                drawContent()
+                // 绘制描边（按 shape outline，宽度取 borderWidth）
+                val stroke = effectiveSpec.borderWidth.toPx()
+                if (effectiveSpec.edgeGlow > 0f) {
+                    drawOutline(
+                        outline = effectiveShape.createOutline(size, layoutDirection, this),
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = effectiveSpec.edgeGlow),
+                                borderColor.copy(alpha = effectiveSpec.borderAlpha * 0.4f),
+                            ),
+                        ),
+                        strokeWidth = stroke,
+                    )
+                } else {
+                    drawOutline(
+                        outline = effectiveShape.createOutline(size, layoutDirection, this),
+                        color = borderColor.copy(alpha = effectiveSpec.borderAlpha),
+                        strokeWidth = stroke,
+                    )
+                }
+            },
         content = content,
     )
 }

@@ -1,8 +1,9 @@
 # HamKit UI Kit
 
-Android 原生 **玻璃拟态（Glassmorphism）× 扁平风** Jetpack Compose UI 组件库（v0.3.0）。
+Android 原生 **玻璃拟态（Glassmorphism）× 扁平风** Jetpack Compose UI 组件库（v0.4.0）。
 
-- **性能优先**：Android 12+（API 31+）使用 `RenderEffect` 硬件实时模糊；Android 8.0~11（API 26–30）自动降级为高性能半透明玻璃（可注入自定义模糊实现）
+- **真实透视玻璃**（v0.4）：API 31+ 经 `GraphicsLayer` 背景快照 + `blur → brightness → saturation` 链式 RenderEffect，玻璃后画面真实透视模糊
+- **性能优先**：Android 8.0~11（API 26–30）自动降级为高性能半透明玻璃 + 全套质感层（可注入自定义模糊实现）
 - **零第三方依赖**：仅依赖 AndroidX / Compose 官方库，图标全部 Canvas 绘制
 - **全量开放的自定义底层**：设计令牌、玻璃参数、动效、主题、组件样式多级可覆写
 - `minSdk 26` / `targetSdk 37` / MIT 协议
@@ -59,8 +60,30 @@ HamSwitch(checked = on, onCheckedChange = { }, glass = GlassSpec(blurRadius = 8.
 | `cornerRadius` | 圆角体系 | 16–24dp |
 | `shadowElevation` | 阴影 | 0–2dp |
 | `tint` | 玻璃染色 | null（用主题基色） |
+| `highlight` | 内顶高光强度（v0.4） | 0.10–0.28 |
+| `edgeGlow` | 边缘上亮下暗光带强度（v0.4） | 0.2–0.5 |
+| `grain` | 噪点颗粒强度（v0.4，0 关闭） | 0.03–0.05 |
+| `refraction` | 模糊背景的亮度/饱和提升（v0.4） | 0.25–0.7 |
 
-此外 `HamColors`（含渐变底色组 `backdrop`）、`HamTypography`、`HamShapes`、`HamMotion`（v0.2 动效体系）全部可整体替换。
+此外 `HamColors`（含渐变底色组 `backdrop`）、`HamTypography`、`HamShapes`、`HamMotion`（动效体系）全部可整体替换。
+
+## 玻璃配方（v0.4）
+
+`GlassSurface` 自底向上绘制五层，全部经 `GlassSpec` 可调：
+
+```
+┌─ 边缘光描边（上亮下暗渐变）──────────────┐
+│  内顶高光（顶缘白色光带）                 │
+│   半透明表面色（surfaceAlpha）            │
+│   + 透视模糊背景（API 31+：               │
+│     blur → brightness → saturation 链）   │
+│   + 噪点颗粒（grain）                     │
+└─────────────────────────────────────────┘
+```
+
+- **透视模糊来源**：`GlassBackdrop` 把自身（渐变 + 漂浮色斑）录制到共享 `GraphicsLayer`，玻璃层 `drawLayer` 该快照并加链式 RenderEffect——玻璃后面是什么就模糊什么；
+- **无背景快照 / API 26–30 / blur 关闭**时自动回落：表面加厚 + 保留高光/双描边/噪点全套质感；
+- 关闭噪点：`GlassSpec(grain = 0f)`；关闭折射提亮：`GlassSpec(refraction = 0f)`。
 
 ## 动效体系（v0.3）
 
@@ -104,14 +127,14 @@ items.forEachIndexed { i, card ->
 
 ## 发布使用
 
-`uikit` 已配置 `maven-publish`（`com.hamkit:uikit:0.3.0`）：
+`uikit` 已配置 `maven-publish`（`com.hamkit:uikit:0.4.0`）：
 
 ```kotlin
 // settings.gradle.kts
 repositories { mavenLocal(); google(); mavenCentral() }
 
 // module build.gradle.kts
-implementation("com.hamkit:uikit:0.3.0")
+implementation("com.hamkit:uikit:0.4.0")
 ```
 
 本地验证：`./gradlew :uikit:publishToMavenLocal`
