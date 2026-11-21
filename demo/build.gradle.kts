@@ -26,8 +26,12 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
+    // AGP 9 / KGP 2.2：kotlinOptions DSL 已移除，改用 compilerOptions
+    @Suppress("UnstableApiUsage")
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 }
 
