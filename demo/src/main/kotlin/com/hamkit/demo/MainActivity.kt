@@ -17,8 +17,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             // 主题状态：预设与明暗切换均可在画廊内实时调整
-            val preset by remember { mutableStateOf(HamThemePreset.Sky) }
-            val isDark by remember { mutableStateOf(false) }
+            var preset by remember { mutableStateOf(HamThemePreset.Sky) }
+            var isDark by remember { mutableStateOf(false) }
             HamKitThemePreset(preset = preset, isDark = isDark) {
                 GalleryScreen(
                     isDark = isDark,
