@@ -1,6 +1,6 @@
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
+    // AGP 9.0+ 内置 Kotlin 支持，无需 kotlin-android 插件
     alias(libs.plugins.kotlin.compose)
     // 发布 AAR 到 Maven 仓库（本地 / 远端）
     `maven-publish`
@@ -15,7 +15,7 @@ android {
         consumerProguardFiles("consumer-rules.pro")
     }
 
-    // Java/Kotlin 目标统一 17（AGP 9.x 要求）
+    // Java/Kotlin 目标统一 17
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -31,6 +31,18 @@ android {
     }
 }
 
+dependencies {
+    // Compose BOM 统一版本，库只依赖官方 Compose 基础层
+    implementation(platform(libs.compose.bom))
+    api(libs.compose.ui)
+    api(libs.compose.ui.graphics)
+    api(libs.compose.foundation)
+    api(libs.compose.material3)
+
+    debugImplementation(libs.compose.ui.tooling)
+    api(libs.compose.ui.tooling.preview)
+}
+
 // maven 发布配置：publishToMavenLocal 即可本地验证接入
 publishing {
     publications {
@@ -43,16 +55,4 @@ publishing {
             }
         }
     }
-}
-
-dependencies {
-    // Compose BOM 统一版本，库只依赖官方 Compose 基础层
-    implementation(platform(libs.compose.bom))
-    api(libs.compose.ui)
-    api(libs.compose.ui.graphics)
-    api(libs.compose.foundation)
-    api(libs.compose.material3)
-
-    debugImplementation(libs.compose.ui.tooling)
-    api(libs.compose.ui.tooling.preview)
 }

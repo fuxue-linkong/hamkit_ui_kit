@@ -1,6 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    // AGP 9.0+ 内置 Kotlin 支持，无需 kotlin-android 插件
     alias(libs.plugins.kotlin.compose)
 }
 
@@ -13,7 +13,7 @@ android {
         minSdk = 26
         targetSdk = 37
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "0.4.0"
     }
 
     buildTypes {
