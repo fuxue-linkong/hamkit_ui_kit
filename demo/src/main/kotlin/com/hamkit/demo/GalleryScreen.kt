@@ -40,6 +40,7 @@ import com.hamkit.uikit.components.HamTabRow
 import com.hamkit.uikit.components.HamTextField
 import com.hamkit.uikit.components.HamToast
 import com.hamkit.uikit.components.HamTopAppBar
+import com.hamkit.uikit.effect.hamEnter
 import com.hamkit.uikit.theme.HamThemePreset
 import com.hamkit.uikit.theme.LocalHamColors
 import com.hamkit.uikit.theme.LocalHamTypography
@@ -98,7 +99,7 @@ fun GalleryScreen(
 
                 // ── 按钮 ──
                 item {
-                    HamCard(title = "Button") {
+                    HamCard(title = "Button", modifier = Modifier.hamEnter(index = 0)) {
                         Spacer(Modifier.height(12.dp))
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             HamButton(text = "玻璃按钮（填充宽度）", onClick = {}, glass = glassFrom(blurRadius, surfaceAlpha), style = com.hamkit.uikit.components.HamButtonStyle(fillMaxWidth = true))
@@ -109,7 +110,7 @@ fun GalleryScreen(
 
                 // ── 输入 ──
                 item {
-                    HamCard(title = "TextField") {
+                    HamCard(title = "TextField", modifier = Modifier.hamEnter(index = 1)) {
                         Spacer(Modifier.height(12.dp))
                         HamTextField(
                             value = inputText,
@@ -122,7 +123,7 @@ fun GalleryScreen(
 
                 // ── 开关与滑杆 ──
                 item {
-                    HamCard(title = "Switch & Slider") {
+                    HamCard(title = "Switch & Slider", modifier = Modifier.hamEnter(index = 2)) {
                         Spacer(Modifier.height(12.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             HamSwitch(checked = switchOn, onCheckedChange = { switchOn = it }, glass = glassFrom(blurRadius, surfaceAlpha))
@@ -138,7 +139,7 @@ fun GalleryScreen(
 
                 // ── v0.2 新组件：选择类 ──
                 item {
-                    HamCard(title = "Checkbox / Radio / Segmented") {
+                    HamCard(title = "Checkbox / Radio / Segmented", modifier = Modifier.hamEnter(index = 3)) {
                         Spacer(Modifier.height(12.dp))
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                             HamCheckbox(checked = checkboxOn, onCheckedChange = { checkboxOn = it })
@@ -156,7 +157,7 @@ fun GalleryScreen(
 
                 // ── v0.2 新组件：信息与列表 ──
                 item {
-                    HamCard(title = "Search / Avatar / ListItem / Skeleton") {
+                    HamCard(title = "Search / Avatar / ListItem / Skeleton", modifier = Modifier.hamEnter(index = 4)) {
                         Spacer(Modifier.height(12.dp))
                         HamSearchBar(value = searchQuery, onValueChange = { searchQuery = it })
                         Spacer(Modifier.height(12.dp))
@@ -176,7 +177,7 @@ fun GalleryScreen(
 
                 // ── v0.2 新组件：导航与浮层 ──
                 item {
-                    HamCard(title = "TabRow / Fab / Toast") {
+                    HamCard(title = "TabRow / Fab / Toast", modifier = Modifier.hamEnter(index = 5)) {
                         Spacer(Modifier.height(12.dp))
                         HamTabRow(items = listOf("推荐", "关注", "热榜"), selectedIndex = segmentedIndex, onTabSelected = { segmentedIndex = it })
                         Spacer(Modifier.height(14.dp))
@@ -195,7 +196,7 @@ fun GalleryScreen(
 
                 // ── 玻璃参数实时调节（展示自定义底层） ──
                 item {
-                    HamCard(title = "Glass Tuner（实时调节底层参数）") {
+                    HamCard(title = "Glass Tuner（实时调节底层参数）", modifier = Modifier.hamEnter(index = 6)) {
                         Spacer(Modifier.height(10.dp))
                         androidx.compose.material3.Text(
                             "blurRadius = ${blurRadius.toInt()}dp",

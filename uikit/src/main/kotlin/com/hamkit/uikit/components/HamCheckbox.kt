@@ -18,6 +18,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.hamkit.uikit.effect.LocalHamMotion
 import com.hamkit.uikit.effect.hamPressable
 import com.hamkit.uikit.theme.LocalHamColors
 import com.hamkit.uikit.theme.LocalHamShapes
@@ -39,10 +40,11 @@ fun HamCheckbox(
 ) {
     val colors = LocalHamColors.current
     val shapes = LocalHamShapes.current
-    // 勾选填充进度动画：方框内强调色从 0 缩放到满格
+    val motion = LocalHamMotion.current
+    // 勾选填充进度动画：方框内强调色从 0 缩放到满格（弹簧参数跟随主题令牌）
     val fillProgress by animateFloatAsState(
         targetValue = if (checked) 1f else 0f,
-        animationSpec = spring(dampingRatio = 1.1f, stiffness = 480f),
+        animationSpec = spring(dampingRatio = motion.springDamping, stiffness = motion.springStiffness),
         label = "HamCheckboxFill",
     )
     val interaction = remember { MutableInteractionSource() }

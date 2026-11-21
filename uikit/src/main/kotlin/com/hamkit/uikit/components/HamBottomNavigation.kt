@@ -1,5 +1,9 @@
 package com.hamkit.uikit.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -12,12 +16,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.hamkit.uikit.effect.GlassSurface
+import com.hamkit.uikit.effect.LocalHamMotion
 import com.hamkit.uikit.effect.hamPressable
 import com.hamkit.uikit.theme.GlassSpec
 import com.hamkit.uikit.theme.LocalHamColors
@@ -54,6 +60,12 @@ fun HamBottomNavigation(
         ) {
             items.forEachIndexed { index, label ->
                 val selected = index == selectedIndex
+                // 选中色随状态过渡平滑变化（统一 stateChangeMillis 手感）
+                val labelColor by animateColorAsState(
+                    targetValue = if (selected) colors.accent else colors.textSecondary,
+                    animationSpec = tween(durationMillis = LocalHamMotion.current.stateChangeMillis),
+                    label = "HamNavLabelColor",
+                )
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
@@ -63,17 +75,29 @@ fun HamBottomNavigation(
                     Text(
                         text = label,
                         style = typography.label,
-                        color = if (selected) colors.accent else colors.textSecondary,
+                        color = labelColor,
                     )
-                    // 选中指示圆点：扁平风的轻量标记
+                    // 选中指示圆点：尺寸 spring 弹出 / 收回
+                    val dotScale by animateFloatAsState(
+                        targetValue = if (selected) 1f else 0f,
+                        animationSpec = spring(
+                            dampingRatio = LocalHamMotion.current.overshootDamping,
+                            stiffness = LocalHamMotion.current.overshootStiffness,
+                        ),
+                        label = "HamNavDot",
+                    )
                     Box(
                         Modifier
                             .padding(top = 4.dp)
                             .background(
-                                color = if (selected) colors.accent else Color.Transparent,
+                                color = colors.accent.copy(alpha = dotScale),
                                 shape = androidx.compose.foundation.shape.CircleShape,
                             )
-                            .size(5.dp),
+                            .size(5.dp)
+                            .graphicsLayer {
+                                scaleX = dotScale
+                                scaleY = dotScale
+                            },
                     )
                 }
             }

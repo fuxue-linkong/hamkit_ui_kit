@@ -1,7 +1,9 @@
 package com.hamkit.uikit.components
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -21,6 +23,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.hamkit.uikit.effect.GlassSurface
+import com.hamkit.uikit.effect.LocalHamMotion
 import com.hamkit.uikit.effect.hamPressable
 import com.hamkit.uikit.theme.GlassSpec
 import com.hamkit.uikit.theme.LocalHamColors
@@ -65,7 +68,20 @@ fun HamSwitch(
         animationSpec = spring(dampingRatio = 0.75f, stiffness = 500f),
         label = "HamSwitchThumb",
     )
-    val trackColor = if (checked) (style.checkedTrackColor ?: colors.accent) else Color.Transparent
+    // 滑块颜色过渡：开=onAccent、关=textSecondary
+    val thumbColorAnimated by animateColorAsState(
+        targetValue = if (checked) colors.onAccent else colors.textSecondary,
+        animationSpec = tween(durationMillis = motion.stateChangeMillis),
+        label = "HamSwitchThumbColor",
+    )
+    // 轨道颜色过渡：开/关切换时平滑变化（跟随主题动效令牌）
+    val motion = LocalHamMotion.current
+    val targetTrackColor = if (checked) (style.checkedTrackColor ?: colors.accent) else Color.Transparent
+    val trackColor by animateColorAsState(
+        targetValue = targetTrackColor,
+        animationSpec = tween(durationMillis = motion.stateChangeMillis),
+        label = "HamSwitchTrack",
+    )
 
     GlassSurface(
         modifier = modifier
@@ -83,7 +99,7 @@ fun HamSwitch(
     ) {
         Box(
             Modifier
-                .background(trackColor.copy(alpha = if (checked) 0.9f else 0f), shapes.full),
+                .background(trackColor, shapes.full),
         )
         // 滑块：按进度在轨道内平移（留 3dp 边距）
         Box(
@@ -92,7 +108,10 @@ fun HamSwitch(
                 .offset(x = lerpDp(3.dp, style.trackWidth - style.thumbSize - 3.dp, thumbPosition))
                 .size(style.thumbSize)
                 .clip(CircleShape)
-                .background(if (checked) colors.onAccent else colors.textSecondary),
+                .background(
+                    // 滑块颜色同样随开合平滑过渡
+                    thumbColorAnimated,
+                ),
         )
     }
 }

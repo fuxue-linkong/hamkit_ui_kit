@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.hamkit.uikit.effect.LocalHamMotion
 import com.hamkit.uikit.effect.hamPressable
 import com.hamkit.uikit.theme.LocalHamColors
 
@@ -35,10 +36,11 @@ fun HamRadioButton(
     enabled: Boolean = true,
 ) {
     val colors = LocalHamColors.current
-    // 选中点缩放进度：0（无）→ 1（满圆）
+    val motion = LocalHamMotion.current
+    // 选中点缩放进度：0（无）→ 1（满圆），弹簧参数跟随主题令牌
     val dotProgress by animateFloatAsState(
         targetValue = if (selected) 1f else 0f,
-        animationSpec = spring(dampingRatio = 0.9f, stiffness = 420f),
+        animationSpec = spring(dampingRatio = motion.overshootDamping, stiffness = motion.overshootStiffness),
         label = "HamRadioDot",
     )
     val interaction = remember { MutableInteractionSource() }

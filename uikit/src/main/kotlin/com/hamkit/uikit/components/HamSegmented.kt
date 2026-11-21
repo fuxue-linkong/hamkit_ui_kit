@@ -7,6 +7,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.offset
@@ -16,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,6 +35,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.hamkit.uikit.effect.GlassSurface
+import com.hamkit.uikit.effect.LocalHamMotion
 import com.hamkit.uikit.effect.hamPressable
 import com.hamkit.uikit.theme.GlassSpec
 import com.hamkit.uikit.theme.LocalHamColors
@@ -60,6 +71,8 @@ fun HamSegmented(
     val colors = LocalHamColors.current
     val typography = LocalHamTypography.current
     val density = LocalDensity.current
+    // 读取主题动效令牌：指示块滑动与状态色过渡统一手感
+    val motion = LocalHamMotion.current
 
     GlassSurface(
         modifier = modifier.height(style.height),
@@ -67,10 +80,19 @@ fun HamSegmented(
         shape = RoundedCornerShape(14.dp),
     ) {
         Box {
-            // 滑动指示块：垫在文字层下方，按选中索引平移
+            // 滑动指示块：垫在文字层下方，选中索引经动画平滑滑动
             BoxWithConstraints(Modifier.matchParentSize()) {
                 val segmentWidth = maxWidth / items.size
-                val thumbOffsetPx = segmentWidth.toPx() * selectedIndex
+                // 选中索引的弹簧动画：指示块随索引变化平滑滑动
+                val animatedIndex by animateFloatAsState(
+                    targetValue = selectedIndex.toFloat(),
+                    animationSpec = spring(
+                        dampingRatio = motion.overshootDamping,
+                        stiffness = motion.overshootStiffness,
+                    ),
+                    label = "HamSegmentedThumb",
+                )
+                val thumbOffsetPx = segmentWidth.toPx() * animatedIndex
                 Box(
                     Modifier
                         .offset(x = with(density) { thumbOffsetPx.toDp() })

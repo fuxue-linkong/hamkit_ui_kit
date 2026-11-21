@@ -1,6 +1,6 @@
 # HamKit UI Kit
 
-Android 原生 **玻璃拟态（Glassmorphism）× 扁平风** Jetpack Compose UI 组件库（v0.2.0）。
+Android 原生 **玻璃拟态（Glassmorphism）× 扁平风** Jetpack Compose UI 组件库（v0.3.0）。
 
 - **性能优先**：Android 12+（API 31+）使用 `RenderEffect` 硬件实时模糊；Android 8.0~11（API 26–30）自动降级为高性能半透明玻璃（可注入自定义模糊实现）
 - **零第三方依赖**：仅依赖 AndroidX / Compose 官方库，图标全部 Canvas 绘制
@@ -62,17 +62,35 @@ HamSwitch(checked = on, onCheckedChange = { }, glass = GlassSpec(blurRadius = 8.
 
 此外 `HamColors`（含渐变底色组 `backdrop`）、`HamTypography`、`HamShapes`、`HamMotion`（v0.2 动效体系）全部可整体替换。
 
-## 动效体系（v0.2）
+## 动效体系（v0.3）
 
-全库统一的按压反馈与运动手感，`HamMotion` 令牌可整体替换：
+全库统一的按压反馈、入场与状态过渡手感，`HamMotion` 令牌可整体替换：
+
+| 令牌 | 说明 | 默认值 |
+|---|---|---|
+| `pressedScale` / `pressedAlpha` | 按压缩放 / 变淡 | 0.96 / 0.85 |
+| `springStiffness` / `springDamping` | 按下弹簧 | MediumHigh / 1.1（无过冲） |
+| `overshootDamping` / `overshootStiffness` | **回弹过冲弹簧**（松手"Q 弹"） | 0.85 / Medium |
+| `enterMillis` / `enterStaggerMillis` | 入场时长 / 列表交错间隔 | 320ms / 40ms |
+| `stateChangeMillis` | 选中色、轨道色等状态过渡 | 180ms |
+| `shimmerMillis` | 骨架屏呼吸节拍 | 1200ms |
 
 ```kotlin
-// 全局动效替换（扁平风默认：快、轻、无过冲）
-HamKitTheme(motion = HamMotion(pressedScale = 0.94f, springStiffness = 600f)) { ... }
+// 全局动效替换
+HamKitTheme(motion = HamMotion(pressedScale = 0.94f, overshootDamping = 0.9f)) { ... }
+// 正式场景一键关闭过冲
+HamKitTheme(motion = HamMotion.NoOvershoot) { ... }
 
-// 任意组件接入统一按压反馈
+// 任意组件接入统一按压反馈（按下干脆、松手微过冲）
 Box(Modifier.hamPressable(interactionSource).clickable { ... })
+
+// 入场动画 + 列表交错瀑布（每项错开 enterStaggerMillis）
+items.forEachIndexed { i, card ->
+    HamCard(modifier = Modifier.hamEnter(index = i)) { ... }
+}
 ```
+
+内置动画已接入：Segmented/TabRow 指示块弹性滑动、Switch 轨道/滑块颜色过渡、BottomNavigation 选中色过渡与圆点弹出、Checkbox 勾选填充、Radio 圆点弹出、Skeleton 呼吸。
 
 ## 组件清单（v0.2 · 23 个）
 
@@ -86,14 +104,14 @@ Box(Modifier.hamPressable(interactionSource).clickable { ... })
 
 ## 发布使用
 
-`uikit` 已配置 `maven-publish`（`com.hamkit:uikit:0.2.0`）：
+`uikit` 已配置 `maven-publish`（`com.hamkit:uikit:0.3.0`）：
 
 ```kotlin
 // settings.gradle.kts
 repositories { mavenLocal(); google(); mavenCentral() }
 
 // module build.gradle.kts
-implementation("com.hamkit:uikit:0.2.0")
+implementation("com.hamkit:uikit:0.3.0")
 ```
 
 本地验证：`./gradlew :uikit:publishToMavenLocal`

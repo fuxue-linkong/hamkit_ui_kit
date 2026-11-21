@@ -157,6 +157,8 @@
   /* ========== v0.2：交互动效（对应 HamMotion） ========== */
   .btn, .chip, .switch, .nav-item, .seg-item, .list-item { transition: transform .16s cubic-bezier(.4,0,.6,1), opacity .16s, background .2s, color .2s; }
   .btn:active, .chip:active, .switch:active, .seg-item:active, .list-item:active { transform: scale(.96); opacity: .85; }
+  /* v0.3：松手回弹微过冲（对应 overshootDamping 0.85） */
+  .btn:not(:active), .chip:not(:active), .switch:not(:active) { transition: transform .26s cubic-bezier(.3,1.7,.4,1), opacity .2s, background .2s, color .2s; }
 
   /* ========== 复选框 / 单选（Canvas 绘制对应 HTML/SVG 实现） ========== */
   .checkbox { width: 22px; height: 22px; border-radius: 6px; cursor: pointer; position: relative;
@@ -213,6 +215,24 @@
     background: var(--accent); color: var(--on-accent); font-size: 26px; font-weight: 700;
     box-shadow: 0 4px 14px rgba(0,0,0,.18); transition: transform .16s; }
   .fab:active { transform: scale(.94); }
+
+  /* ========== v0.3：入场动画（对应 hamEnter：淡入 + 上滑 + 交错） ========== */
+  main > * { animation: hamEnter .32s cubic-bezier(.2,.7,.3,1) both; }
+  /* 交错节奏：子元素按序号错开 40ms（对应 enterStaggerMillis） */
+  main > *:nth-child(1) { animation-delay: .00s; }
+  main > *:nth-child(2) { animation-delay: .04s; }
+  main > *:nth-child(3) { animation-delay: .08s; }
+  main > *:nth-child(4) { animation-delay: .12s; }
+  main > *:nth-child(5) { animation-delay: .16s; }
+  main > *:nth-child(6) { animation-delay: .20s; }
+  main > *:nth-child(7) { animation-delay: .24s; }
+  main > *:nth-child(8) { animation-delay: .28s; }
+  main > *:nth-child(9) { animation-delay: .32s; }
+  main > *:nth-child(n+10) { animation-delay: .36s; }
+  @keyframes hamEnter {
+    from { opacity: 0; transform: translateY(24px) scale(.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
 </style>
 </head>
 <body>
